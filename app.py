@@ -1,102 +1,309 @@
-import os
-import tempfile
-import subprocess
-from flask import Flask, request, render_template, send_file, abort
-from werkzeug.utils import secure_filename
-from PIL import Image
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Transmute - Conversor Online</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      background-color: #fff;
+      color: #222;
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background-color: #f9f9f9;
+      padding: 30px 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      text-align: center;
+      margin: auto;
+      box-sizing: border-box;
+    }
+    h1 {
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #111;
+    }
+    .subtitle {
+      margin-bottom: 25px;
+      font-size: 1rem;
+      color: #555;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      position: relative;
+      z-index: 1;
+    }
+    label {
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .file-upload-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 5px;
+    }
+    .custom-file-upload {
+      flex: none;
+      display: inline-block;
+      width: 100%;
+      min-width: 160px;
+      padding: 10px 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      color: #6200ee;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      user-select: none;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.1rem;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+    .custom-file-upload:hover {
+      background-color: #6200ee;
+      color: white;
+      border-color: #6200ee;
+    }
+    #file-name-display {
+      margin-top: 8px;
+      font-size: 1rem;
+      color: #444;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      user-select: none;
+      font-family: 'Poppins', sans-serif;
+    }
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-family: 'Poppins', sans-serif;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    select:focus {
+      outline: 2px solid #6200ee;
+      border-color: #6200ee;
+    }
+    button {
+      background-color: #6200ee;
+      color: white;
+      border: none;
+      padding: 14px 0;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background-color 0.25s ease;
+      font-family: 'Poppins', sans-serif;
+      max-width: 100%;
+      width: 100%;
+      margin: 10px auto 0;
+      box-sizing: border-box;
+    }
+    button:hover {
+      background-color: #3700b3;
+    }
+    .info {
+      margin-top: 30px;
+      font-size: 0.95rem;
+      text-align: left;
+      color: #666;
+      border-top: 1px solid #ddd;
+      padding-top: 15px;
+    }
+    .info h2 {
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #444;
+      text-align: center;
+    }
+    .format-group {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    .format-group:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .format-group h3 {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #555;
+    }
+    .format-group ul {
+      list-style: inside disc;
+      padding-left: 0;
+      margin: 0;
+    }
+    .format-group ul li {
+      max-width: 100%;
+      padding-bottom: 4px;
+      word-wrap: break-word;
+    }
+    @media (max-width: 480px) {
+      body {
+        padding: 10px 0;
+      }
+      .container {
+        padding: 20px 15px;
+      }
+      select, .custom-file-upload, button {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Transmute</h1>
+    <p class="subtitle">Converta arquivos de um formato para outro com facilidade.</p>
+    <form id="convert-form" method="POST" action="/convert" enctype="multipart/form-data">
+      <label for="input-format">Formato original:</label>
+      <select id="input-format" name="input-format" disabled>
+        <option value="">Detectando automaticamente...</option>
+      </select>
 
-app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 30 * 1024 * 1024  # 30 MB
+      <label for="output-format">Converter para:</label>
+      <select id="output-format" name="output-format" required>
+        <option value="">Selecione o formato de saída</option>
+        <option value="pdf">PDF</option>
+        <option value="docx">DOCX</option>
+        <option value="mp3">MP3</option>
+        <option value="wav">WAV</option>
+        <option value="mp4">MP4</option>
+        <option value="mov">MOV</option>
+        <option value="avi">AVI</option>
+        <option value="jpg">JPG</option>
+        <option value="png">PNG</option>
+        <option value="gif">GIF</option>
+        <option value="bmp">BMP</option>
+        <option value="tiff">TIFF</option>
+      </select>
 
-ALLOWED_EXTENSIONS = {
-    'pdf', 'docx', 'mp3', 'wav', 'mp4', 'mov', 'avi',
-    'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'
-}
+      <label for="file-upload">Arquivo:</label>
+      <div class="file-upload-wrapper">
+        <label for="file-upload" class="custom-file-upload">
+          Escolher arquivo ou arraste aqui
+        </label>
+        <input type="file" id="file-upload" name="file" accept="*/*" required />
+      </div>
+      <div id="file-name-display"></div>
 
-def allowed_file(filename):
-    ext = filename.rsplit('.', 1)[-1].lower()
-    return ext in ALLOWED_EXTENSIONS
+      <button type="submit">Converter</button>
+    </form>
 
-def resize_image_if_needed(input_path, max_width=1920, max_height=1080):
-    with Image.open(input_path) as img:
-        if img.width > max_width or img.height > max_height:
-            img.thumbnail((max_width, max_height))
-            img.save(input_path)
+    <div class="info">
+      <h2>Sobre os formatos</h2>
 
-def convert_file(input_path, output_path, input_ext, output_ext):
-    # Aqui só exemplo básico, ajuste para suas conversões completas
-    
-    if input_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'] and output_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff']:
-        # Imagem para imagem: redimensionar para evitar peso
-        resize_image_if_needed(input_path)
-        img = Image.open(input_path)
-        img.save(output_path)
-        return
+      <div class="format-group">
+        <h3>Documentos</h3>
+        <ul>
+          <li>PDF - Documento portátil, ideal para leitura universal</li>
+          <li>DOCX - Documento editável do Microsoft Word</li>
+        </ul>
+      </div>
 
-    if input_ext in ['mp4', 'mov', 'avi'] and output_ext in ['mp4', 'mov', 'avi']:
-        # Vídeo para vídeo com limite 720p
-        command = [
-            'ffmpeg', '-i', input_path,
-            '-vf', 'scale=-2:720',
-            '-preset', 'fast', '-crf', '28',
-            output_path
-        ]
-        subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return
+      <div class="format-group">
+        <h3>Áudio</h3>
+        <ul>
+          <li>MP3 - Compressão leve com boa qualidade</li>
+          <li>WAV - Áudio sem compressão com qualidade máxima</li>
+        </ul>
+      </div>
 
-    if input_ext in ['mp4', 'mov', 'avi'] and output_ext == 'mp3':
-        # Vídeo para áudio mp3
-        command = [
-            'ffmpeg', '-i', input_path,
-            '-vn', '-acodec', 'libmp3lame', '-q:a', '2',
-            output_path
-        ]
-        subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return
+      <div class="format-group">
+        <h3>Vídeo</h3>
+        <ul>
+          <li>MP4 - Compatível com a maioria dos dispositivos</li>
+          <li>MOV - Formato da Apple com alta qualidade</li>
+          <li>AVI - Vídeo com menos compressão e maior tamanho</li>
+        </ul>
+      </div>
 
-    # Você pode adicionar outras conversões específicas aqui
+      <div class="format-group">
+        <h3>Imagens</h3>
+        <ul>
+          <li>JPG - Formato popular com compressão</li>
+          <li>PNG - Imagem com transparência e compressão sem perdas</li>
+          <li>GIF - Animações simples e suporte limitado de cores</li>
+          <li>BMP - Formato sem compressão</li>
+          <li>TIFF - Formato para alta qualidade e edição</li>
+        </ul>
+      </div>
+    </div>
 
-    # Caso não tenha conversão específica, copie arquivo
-    from shutil import copyfile
-    copyfile(input_path, output_path)
+    <footer style="margin-top: 30px; font-size: 0.9rem; color: #aaa;">
+      Desenvolvido por Léo Borborema
+    </footer>
+  </div>
 
+  <script>
+    const fileInput = document.getElementById('file-upload');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const inputFormatSelect = document.getElementById('input-format');
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) {
+        if (file.size > 30 * 1024 * 1024) {
+          alert('Arquivo muito grande! Máximo permitido: 30 MB.');
+          fileInput.value = '';
+          fileNameDisplay.textContent = '';
+          inputFormatSelect.innerHTML = '<option value="">Detectando automaticamente...</option>';
+          return;
+        }
+        fileNameDisplay.textContent = `Arquivo carregado: ${file.name}`;
+        detectFormat(file.name);
+      } else {
+        fileNameDisplay.textContent = '';
+        inputFormatSelect.innerHTML = '<option value="">Detectando automaticamente...</option>';
+      }
+    });
 
+    function detectFormat(fileName) {
+      const ext = fileName.split('.').pop().toLowerCase();
+      inputFormatSelect.innerHTML = `<option value="${ext}">${ext.toUpperCase()}</option>`;
+    }
 
-@app.route('/convert', methods=['POST'])
-def convert():
-    if 'file' not in request.files:
-        abort(400, "Arquivo não enviado")
-    file = request.files['file']
-    if file.filename == '':
-        abort(400, "Arquivo inválido")
-    if not allowed_file(file.filename):
-        abort(400, "Formato não suportado")
-
-    input_ext = file.filename.rsplit('.', 1)[-1].lower()
-    output_ext = request.form.get('output-format')
-    if not output_ext:
-        abort(400, "Formato de saída não selecionado")
-
-    input_filename = secure_filename(file.filename)
-    with tempfile.TemporaryDirectory() as tmpdir:
-        input_path = os.path.join(tmpdir, input_filename)
-        file.save(input_path)
-
-        output_filename = f"converted.{output_ext}"
-        output_path = os.path.join(tmpdir, output_filename)
-
-        convert_file(input_path, output_path, input_ext, output_ext)
-
-        try:
-            return send_file(output_path, as_attachment=True, download_name=output_filename)
-        finally:
-            # arquivos temporários são apagados automaticamente por TemporaryDirectory
-            pass
-
-
-if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    // Drag & Drop
+    const uploadWrapper = document.querySelector('.custom-file-upload');
+    uploadWrapper.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadWrapper.style.backgroundColor = '#eee';
+    });
+    uploadWrapper.addEventListener('dragleave', () => {
+      uploadWrapper.style.backgroundColor = '';
+    });
+    uploadWrapper.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadWrapper.style.backgroundColor = '';
+      fileInput.files = e.dataTransfer.files;
+      fileInput.dispatchEvent(new Event('change'));
+    });
+  </script>
+</body>
+</html>
