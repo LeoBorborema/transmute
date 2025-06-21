@@ -2,128 +2,182 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Transmute - Conversor de Arquivos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Transmute - Conversor Online</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
   <style>
     body {
-      margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: #ffffff;
-      color: #333;
-    }
-
-    .container {
-      max-width: 640px;
-      margin: 40px auto;
+      background-color: #fff;
+      color: #222;
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
       padding: 20px;
     }
-
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background-color: #f9f9f9;
+      padding: 30px 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      text-align: center;
+      margin: auto;
+      box-sizing: border-box;
+    }
     h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      font-size: 32px;
-      color: #222;
-    }
-
-    .field {
-      margin-bottom: 20px;
-    }
-
-    .field label {
-      display: block;
-      font-weight: 600;
       margin-bottom: 8px;
+      font-weight: 700;
+      color: #111;
     }
-
-    .file-label {
+    .subtitle {
+      margin-bottom: 25px;
+      font-size: 1rem;
+      color: #555;
+    }
+    form {
       display: flex;
-      justify-content: center;
-      align-items: center;
-      border: 2px dashed #ccc;
-      border-radius: 8px;
-      padding: 30px;
-      text-align: center;
-      cursor: pointer;
-      transition: background 0.2s;
-      font-size: 16px;
+      flex-direction: column;
+      gap: 15px;
+      position: relative;
+      z-index: 1;
     }
-
-    .file-label:hover {
-      background: #f9f9f9;
+    label {
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #333;
     }
-
     input[type="file"] {
       display: none;
     }
-
-    .field select,
-    #convert-btn {
+    .file-upload-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 5px;
+    }
+    .custom-file-upload {
+      flex: none;
+      display: inline-block;
       width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      border-radius: 8px;
+      min-width: 160px;
+      padding: 10px 20px;
       border: 1px solid #ccc;
-    }
-
-    #convert-btn {
-      background-color: #4CAF50;
-      color: white;
-      font-weight: bold;
-      border: none;
-      margin-top: 10px;
-    }
-
-    #convert-btn:hover {
-      background-color: #45a049;
-    }
-
-    #file-name {
-      margin-top: 10px;
-      text-align: center;
+      border-radius: 6px;
+      color: #6200ee;
       font-weight: 600;
-      color: #2a7;
-    }
-
-    .formats {
-      margin-top: 40px;
-    }
-
-    .formats h2 {
       text-align: center;
-      font-size: 22px;
-      margin-bottom: 15px;
+      cursor: pointer;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      user-select: none;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.1rem;
+      box-sizing: border-box;
+      margin: 0 auto;
     }
-
-    .formats .group {
-      padding-top: 10px;
+    .custom-file-upload:hover {
+      background-color: #6200ee;
+      color: white;
+      border-color: #6200ee;
+    }
+    #file-name-display {
+      margin-top: 8px;
+      font-size: 1rem;
+      color: #444;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      user-select: none;
+      font-family: 'Poppins', sans-serif;
+    }
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-family: 'Poppins', sans-serif;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    select:focus {
+      outline: 2px solid #6200ee;
+      border-color: #6200ee;
+    }
+    select[disabled] {
+      background-color: #eee;
+      cursor: not-allowed;
+      color: #666;
+    }
+    button {
+      background-color: #6200ee;
+      color: white;
+      border: none;
+      padding: 14px 0;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background-color 0.25s ease;
+      font-family: 'Poppins', sans-serif;
+      max-width: 100%;
+      width: 100%;
+      margin: 10px auto 0;
+      box-sizing: border-box;
+    }
+    button:hover {
+      background-color: #3700b3;
+    }
+    .info {
+      margin-top: 30px;
+      font-size: 0.95rem;
+      text-align: left;
+      color: #666;
       border-top: 1px solid #ddd;
-      margin-bottom: 15px;
+      padding-top: 15px;
     }
-
-    .formats .group strong {
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    .formats .group p {
-      margin: 0;
-      font-size: 15px;
-    }
-
-    .footer {
+    .info h2 {
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #444;
       text-align: center;
-      font-size: 14px;
-      color: #777;
-      margin-top: 40px;
     }
-
-    @media (max-width: 600px) {
-      .container {
-        padding: 15px;
+    .format-group {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    .format-group:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .format-group h3 {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #555;
+    }
+    .format-group ul {
+      list-style: inside disc;
+      padding-left: 0;
+      margin: 0;
+    }
+    .format-group ul li {
+      max-width: 100%;
+      padding-bottom: 4px;
+      word-wrap: break-word;
+    }
+    @media (max-width: 480px) {
+      body {
+        padding: 10px 0;
       }
-
-      h1 {
-        font-size: 26px;
+      .container {
+        padding: 20px 15px;
+      }
+      select, .custom-file-upload, button {
+        font-size: 1rem;
       }
     }
   </style>
@@ -131,96 +185,125 @@
 <body>
   <div class="container">
     <h1>Transmute</h1>
-    <form action="/convert" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
-      <div class="field">
-        <label for="file">Escolher arquivo <small>(ou arraste aqui)</small></label>
-        <label class="file-label" for="file" id="drop-area">
-          <input type="file" id="file" name="file" onchange="showFileName(this)">
-          <span id="file-label-text">Clique ou arraste um arquivo aqui</span>
+    <p class="subtitle">Converta arquivos de um formato para outro com facilidade.</p>
+    <form id="convert-form" method="POST" action="/convert" enctype="multipart/form-data" onsubmit="return validateForm()">
+      <label for="input-format">Formato original:</label>
+      <select id="input-format" name="input-format" disabled>
+        <option value="">Detectando automaticamente...</option>
+      </select>
+
+      <label for="output-format">Converter para:</label>
+      <select id="output-format" name="output-format" required>
+        <option value="">Selecione o formato de saída</option>
+        <option value="pdf">PDF</option>
+        <option value="docx">DOCX</option>
+        <option value="mp3">MP3</option>
+        <option value="wav">WAV</option>
+        <option value="mp4">MP4</option>
+        <option value="mov">MOV</option>
+        <option value="avi">AVI</option>
+        <option value="jpg">JPG</option>
+        <option value="png">PNG</option>
+        <option value="gif">GIF</option>
+        <option value="bmp">BMP</option>
+        <option value="tiff">TIFF</option>
+      </select>
+
+      <label for="file-upload">Arquivo:</label>
+      <div class="file-upload-wrapper">
+        <label for="file-upload" class="custom-file-upload">
+          Escolher arquivo ou arraste aqui
         </label>
-        <div id="file-name"></div>
+        <input type="file" id="file-upload" name="file" accept="*/*" required />
       </div>
+      <div id="file-name-display"></div>
 
-      <div class="field">
-        <label for="output-format">Converter para:</label>
-        <select id="output-format" name="output-format" required>
-          <option value="">Selecione um formato</option>
-          <optgroup label="Documentos">
-            <option value="pdf">PDF</option>
-          </optgroup>
-          <optgroup label="Imagens">
-            <option value="jpg">JPG</option>
-            <option value="png">PNG</option>
-          </optgroup>
-          <optgroup label="Áudio">
-            <option value="mp3">MP3</option>
-          </optgroup>
-          <optgroup label="Vídeo">
-            <option value="mp4">MP4</option>
-            <option value="avi">AVI</option>
-            <option value="mov">MOV</option>
-          </optgroup>
-        </select>
-      </div>
-
-      <button type="submit" id="convert-btn">Converter</button>
+      <button type="submit">Converter</button>
     </form>
 
-    <div class="formats">
+    <div class="info">
       <h2>Sobre os formatos</h2>
 
-      <div class="group">
-        <strong>Documentos:</strong>
-        <p>docx → pdf</p>
+      <div class="format-group">
+        <h3>Documentos</h3>
+        <ul>
+          <li>PDF - Documento portátil, ideal para leitura universal</li>
+          <li>DOCX - Documento editável do Microsoft Word</li>
+        </ul>
       </div>
-      <div class="group">
-        <strong>Imagens:</strong>
-        <p>png, jpg → pdf</p>
+
+      <div class="format-group">
+        <h3>Áudio</h3>
+        <ul>
+          <li>MP3 - Compressão leve com boa qualidade</li>
+          <li>WAV - Áudio sem compressão com qualidade máxima</li>
+        </ul>
       </div>
-      <div class="group">
-        <strong>Áudio:</strong>
-        <p>mp4, avi, mov → mp3</p>
+
+      <div class="format-group">
+        <h3>Vídeo</h3>
+        <ul>
+          <li>MP4 - Compatível com a maioria dos dispositivos</li>
+          <li>MOV - Formato da Apple com alta qualidade</li>
+          <li>AVI - Vídeo com menos compressão e maior tamanho</li>
+        </ul>
       </div>
-      <div class="group">
-        <strong>Vídeo:</strong>
-        <p>mp4, avi, mkv → mp4, avi, mov</p>
+
+      <div class="format-group">
+        <h3>Imagens</h3>
+        <ul>
+          <li>JPG - Formato popular com compressão</li>
+          <li>PNG - Imagem com transparência e compressão sem perdas</li>
+          <li>GIF - Animações simples e suporte limitado de cores</li>
+          <li>BMP - Formato sem compressão</li>
+          <li>TIFF - Formato para alta qualidade e edição</li>
+        </ul>
       </div>
     </div>
 
-    <div class="footer">
-      Criado por Léo Borborema
-    </div>
+    <footer style="margin-top: 30px; font-size: 0.9rem; color: #aaa;">
+      Desenvolvido por Léo Borborema
+    </footer>
   </div>
 
   <script>
-    const fileLabel = document.getElementById('drop-area');
-    const fileInput = document.getElementById('file');
-    const fileNameDisplay = document.getElementById('file-name');
+    const fileInput = document.getElementById('file-upload');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const inputFormatSelect = document.getElementById('input-format');
 
-    fileLabel.addEventListener('click', () => fileInput.click());
-
-    fileLabel.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      fileLabel.style.background = "#e6f7ff";
-    });
-
-    fileLabel.addEventListener('dragleave', () => {
-      fileLabel.style.background = "";
-    });
-
-    fileLabel.addEventListener('drop', (e) => {
-      e.preventDefault();
-      fileInput.files = e.dataTransfer.files;
-      showFileName(fileInput);
-      fileLabel.style.background = "";
-    });
-
-    function showFileName(input) {
-      if (input.files.length > 0) {
-        fileNameDisplay.textContent = "Arquivo: " + input.files[0].name;
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) {
+        fileNameDisplay.textContent = `Arquivo carregado: ${file.name}`;
+        detectFormat(file.name);
+      } else {
+        fileNameDisplay.textContent = '';
+        inputFormatSelect.innerHTML = '<option value="">Detectando automaticamente...</option>';
       }
+    });
+
+    function detectFormat(fileName) {
+      const ext = fileName.split('.').pop().toLowerCase();
+      inputFormatSelect.innerHTML = `<option value="${ext}">${ext.toUpperCase()}</option>`;
     }
 
+    // Drag & Drop
+    const uploadWrapper = document.querySelector('.custom-file-upload');
+    uploadWrapper.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadWrapper.style.backgroundColor = '#eee';
+    });
+    uploadWrapper.addEventListener('dragleave', () => {
+      uploadWrapper.style.backgroundColor = '';
+    });
+    uploadWrapper.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadWrapper.style.backgroundColor = '';
+      fileInput.files = e.dataTransfer.files;
+      fileInput.dispatchEvent(new Event('change'));
+    });
+
+    // Validação do formulário
     function validateForm() {
       if (!fileInput.files.length) {
         alert("Por favor, envie um arquivo antes de converter.");
