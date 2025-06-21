@@ -1,75 +1,52 @@
-from flask import Flask, request, send_file, render_template
+from flask import Flask, render_template, request, send_file
+import os
+import tempfile
+import subprocess
+from werkzeug.utils import secure_filename
 from PIL import Image
 from pydub import AudioSegment
-import io
-import os
+from docx import Document
+from fpdf import FPDF
 
 app = Flask(__name__)
-
-# Extensões permitidas por categoria
-ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'}
-ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'ogg'}
-ALLOWED_OUTPUT_FORMATS = ALLOWED_IMAGE_EXTENSIONS.union({'pdf'}).union(ALLOWED_AUDIO_EXTENSIONS)
-
-def allowed_file(filename):
-    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-    return ext in ALLOWED_OUTPUT_FORMATS
+UPLOAD_FOLDER = tempfile.gettempdir()
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/convert', methods=['POST'])
-def convert():
-    if 'file' not in request.files:
-        return "Nenhum arquivo enviado", 400
+def convert_file():
+    file = request.files.get('file')
+    output_format = request.form.get('output-format')
 
-    file = request.files['file']
-    output_format = request.form.get('output-format', '').lower()
+    if not file or not output_format:
+        return "Arquivo e formato de saída são obrigatórios.", 400
 
-    if file.filename == '':
-        return "Nenhum arquivo selecionado", 400
+    filename = secure_filename(file.filename)
+    input_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(input_path)
 
-    input_ext = file.filename.rsplit('.', 1)[1].lower()
-    if not allowed_file(file.filename):
-        return "Formato de arquivo não suportado.", 400
-
-    if output_format not in ALLOWED_OUTPUT_FORMATS:
-        return "Formato de saída não suportado.", 400
+    input_ext = os.path.splitext(filename)[1].lower().replace('.', '')
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], f"converted.{output_format}")
 
     try:
-        if input_ext in ALLOWED_IMAGE_EXTENSIONS:
-            # Converte imagem (incluindo para PDF)
-            img = Image.open(file.stream)
-            buf = io.BytesIO()
-            if output_format == 'pdf':
-                if img.mode == 'RGBA':
-                    img = img.convert('RGB')
-                img.save(buf, format='PDF')
-                mimetype = 'application/pdf'
-            else:
-                img = img.convert('RGB')
-                img.save(buf, format=output_format.upper())
-                mimetype = f'image/{output_format}'
-            buf.seek(0)
-            output_filename = os.path.splitext(file.filename)[0] + '.' + output_format
-            return send_file(buf, as_attachment=True, download_name=output_filename, mimetype=mimetype)
-
-        elif input_ext in ALLOWED_AUDIO_EXTENSIONS:
-            # Converte áudio usando pydub
-            audio = AudioSegment.from_file(file.stream, format=input_ext)
-            buf = io.BytesIO()
-            audio.export(buf, format=output_format)
-            buf.seek(0)
-            mimetype = f'audio/{output_format}'
-            output_filename = os.path.splitext(file.filename)[0] + '.' + output_format
-            return send_file(buf, as_attachment=True, download_name=output_filename, mimetype=mimetype)
-
+        if input_ext in ['mp4', 'avi', 'mov', 'mkv'] and output_format in ['mp4', 'avi', 'mov']:
+            # Conversão de vídeo via FFmpeg
+            cmd = ['ffmpeg', '-i', input_path, output_path, '-y']
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
-            return "Conversão para esse tipo ainda não suportada.", 400
+            return "Formato de conversão não suportado neste momento.", 400
 
+        return send_file(output_path, as_attachment=True)
     except Exception as e:
-        return f"Erro na conversão: {str(e)}", 500
+        return f"Erro ao converter: {str(e)}", 500
+    finally:
+        if os.path.exists(input_path):
+            os.remove(input_path)
+        if os.path.exists(output_path):
+            os.remove(output_path)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=True)
