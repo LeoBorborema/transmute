@@ -1,8 +1,7 @@
-flask
-pydub
-pillow
+Flask
 python-docx
 fpdf
-cairosvg
+PyPDF2
+Pillow
+moviepy
 pdf2image
-gunicorn
