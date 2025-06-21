@@ -1,11 +1,12 @@
 import os
 import subprocess
+import tempfile
 from flask import Flask, request, render_template, send_file, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 from PIL import Image
 from docx import Document
 from fpdf import FPDF
-import tempfile
+from pdf2image import convert_from_path
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
@@ -43,7 +44,7 @@ def convert_image(input_path, output_path, output_format):
         output_format = output_format.upper()
     im.convert('RGB').save(output_path, output_format)
 
-def convert_video(input_path, output_path, output_format):
+def convert_video(input_path, output_path):
     cmd = ['ffmpeg', '-i', input_path, '-y', output_path]
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -67,6 +68,15 @@ def convert_txt_to_pdf(input_path, output_path):
             pdf.multi_cell(0, 10, line.strip())
     pdf.output(output_path)
 
+def convert_pdf_to_images(input_path, output_dir, output_format):
+    pages = convert_from_path(input_path)
+    image_paths = []
+    for i, page in enumerate(pages):
+        img_path = os.path.join(output_dir, f'page_{i+1}.{output_format}')
+        page.save(img_path, output_format.upper())
+        image_paths.append(img_path)
+    return image_paths
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -89,41 +99,74 @@ def convert():
         input_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(input_path)
 
-        output_filename = f"converted.{output_format}"
-        output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
-
         try:
-            if input_format in ['mp3','wav','aac','flac','ogg','m4a','wma'] and \
-               output_format in ['mp3','wav','aac','flac','ogg','m4a','wma']:
+            output_filename = f"converted.{output_format}"
+            output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+
+            # Áudio para áudio
+            audio_formats = ['mp3','wav','aac','flac','ogg','m4a','wma']
+            if input_format in audio_formats and output_format in audio_formats:
                 convert_audio(input_path, output_path)
 
-            elif input_format in ['jpg','jpeg','png','gif','bmp','tiff','webp','svg'] and \
-                 output_format in ['jpg','jpeg','png','gif','bmp','tiff','webp','pdf']:
-                if input_format == 'svg':
-                    from cairosvg import svg2png
-                    png_path = output_path.rsplit('.',1)[0] + ".png"
-                    svg2png(url=input_path, write_to=png_path)
-                    convert_image(png_path, output_path, output_format)
-                    os.remove(png_path)
-                elif output_format == 'pdf':
+            # Imagem para imagem/pdf
+            elif input_format in ['jpg','jpeg','png','gif','bmp','tiff','webp'] and output_format in ['jpg','jpeg','png','gif','bmp','tiff','webp','pdf']:
+                if output_format == 'pdf':
                     im = Image.open(input_path)
                     im.save(output_path, "PDF", resolution=100.0)
                 else:
                     convert_image(input_path, output_path, output_format)
 
-            elif input_format in ['mp4','avi','mov','wmv','flv','mkv','webm','mpeg','3gp'] and \
-                 output_format in ['mp4','avi','mov','wmv','flv','mkv','webm','mpeg','3gp','mp3','wav','aac','flac','ogg','m4a','wma']:
-                if output_format in ['mp3','wav','aac','flac','ogg','m4a','wma']:
+            # Vídeo para vídeo ou áudio
+            video_formats = ['mp4','avi','mov','wmv','flv','mkv','webm','mpeg','3gp']
+            if input_format in video_formats:
+                if output_format in video_formats:
+                    convert_video(input_path, output_path)
+                elif output_format in audio_formats:
                     audio_path = output_path.rsplit('.',1)[0] + ".mp3"
                     cmd = ['ffmpeg', '-i', input_path, '-q:a', '0', '-map', 'a', audio_path, '-y']
                     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     output_path = audio_path
                 else:
-                    convert_video(input_path, output_path, output_format)
+                    flash('Formato de saída não suportado para vídeo.')
+                    return redirect(url_for('index'))
 
-            elif input_format in ['docx'] and output_format == 'pdf':
-                convert_doc_to_pdf(input_path, output_path)
+            # DOCX para PDF ou imagem
+            elif input_format == 'docx':
+                if output_format == 'pdf':
+                    convert_doc_to_pdf(input_path, output_path)
+                elif output_format in ['jpg','jpeg','png','gif','bmp','tiff','webp']:
+                    tmp_pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp_doc.pdf')
+                    convert_doc_to_pdf(input_path, tmp_pdf_path)
+                    images = convert_pdf_to_images(tmp_pdf_path, app.config['UPLOAD_FOLDER'], output_format)
+                    if images:
+                        os.rename(images[0], output_path)
+                        for img in images[1:]:
+                            os.remove(img)
+                    os.remove(tmp_pdf_path)
+                else:
+                    flash('Conversão de DOCX para esse formato não suportada.')
+                    return redirect(url_for('index'))
 
+            # PDF para imagem ou PDF (reenvio)
+            elif input_format == 'pdf':
+                if output_format == 'pdf':
+                    output_path = input_path  # sem conversão, apenas envio
+                elif output_format in ['jpg','jpeg','png','gif','bmp','tiff','webp']:
+                    images = convert_pdf_to_images(input_path, app.config['UPLOAD_FOLDER'], output_format)
+                    if images:
+                        # Para simplificar, envia a primeira página convertida
+                        output_path = images[0]
+                        # Remove as demais páginas convertidas
+                        for img_path in images[1:]:
+                            os.remove(img_path)
+                    else:
+                        flash('Falha ao converter PDF em imagem.')
+                        return redirect(url_for('index'))
+                else:
+                    flash('Conversão de PDF para esse formato não suportada.')
+                    return redirect(url_for('index'))
+
+            # TXT para PDF
             elif input_format == 'txt' and output_format == 'pdf':
                 convert_txt_to_pdf(input_path, output_path)
 
@@ -138,10 +181,10 @@ def convert():
             return redirect(url_for('index'))
 
         finally:
-            if os.path.exists(input_path):
+            if os.path.exists(input_path) and input_path != output_path:
                 os.remove(input_path)
-            if os.path.exists(output_path):
-                os.remove(output_path)
+            # Não removo output_path porque será enviado para o usuário
+
     else:
         flash('Arquivo não permitido ou formato não suportado.')
         return redirect(url_for('index'))
