@@ -1,6 +1,6 @@
-Flask
+flask
+pydub
+pillow
 python-docx
 fpdf
-pydub
-moviepy
-ffmpeg-python
+cairosvg
