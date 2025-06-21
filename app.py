@@ -4,7 +4,6 @@ import tempfile
 import subprocess
 from werkzeug.utils import secure_filename
 from PIL import Image
-from pydub import AudioSegment
 from docx import Document
 from fpdf import FPDF
 
@@ -32,10 +31,25 @@ def convert_file():
     output_path = os.path.join(app.config['UPLOAD_FOLDER'], f"converted.{output_format}")
 
     try:
-        if input_ext in ['mp4', 'avi', 'mov', 'mkv'] and output_format in ['mp4', 'avi', 'mov']:
-            # Conversão de vídeo via FFmpeg
+        if input_ext in ['mp4', 'avi', 'mov', 'mkv'] and output_format in ['mp4', 'avi', 'mov', 'mp3']:
+            # Conversão de vídeo ou vídeo para áudio via FFmpeg
             cmd = ['ffmpeg', '-i', input_path, output_path, '-y']
             subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        elif input_ext in ['png', 'jpg', 'jpeg'] and output_format == 'pdf':
+            image = Image.open(input_path).convert('RGB')
+            image.save(output_path)
+
+        elif input_ext == 'docx' and output_format == 'pdf':
+            # Simulação básica (FPDF + texto plano)
+            doc = Document(input_path)
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            for para in doc.paragraphs:
+                pdf.multi_cell(0, 10, para.text)
+            pdf.output(output_path)
+
         else:
             return "Formato de conversão não suportado neste momento.", 400
 
