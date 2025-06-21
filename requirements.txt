@@ -1,3 +1,5 @@
-flask
-pillow
+Flask
+python-docx
 pydub
+moviepy
+ffmpeg-python
