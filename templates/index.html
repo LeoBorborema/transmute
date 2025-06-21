@@ -181,7 +181,7 @@
   <div class="container">
     <h1>Transmute</h1>
     <p class="subtitle">Converta arquivos de um formato para outro com facilidade.</p>
-    <form id="convert-form" method="POST" action="/convert" enctype="multipart/form-data" onsubmit="return validateForm()">
+    <form id="convert-form" method="POST" action="/convert" enctype="multipart/form-data">
       <label for="input-format">Formato original:</label>
       <select id="input-format" name="input-format" disabled>
         <option value="">Detectando automaticamente...</option>
@@ -190,54 +190,18 @@
       <label for="output-format">Converter para:</label>
       <select id="output-format" name="output-format" required>
         <option value="">Selecione o formato de saída</option>
-
-        <!-- Documentos -->
-        <optgroup label="Documentos">
-          <option value="pdf">PDF</option>
-          <option value="docx">DOCX</option>
-          <option value="doc">DOC</option>
-          <option value="txt">TXT</option>
-          <option value="rtf">RTF</option>
-          <option value="odt">ODT</option>
-          <option value="html">HTML</option>
-          <option value="md">Markdown (MD)</option>
-        </optgroup>
-
-        <!-- Imagens -->
-        <optgroup label="Imagens">
-          <option value="jpg">JPG</option>
-          <option value="jpeg">JPEG</option>
-          <option value="png">PNG</option>
-          <option value="gif">GIF</option>
-          <option value="bmp">BMP</option>
-          <option value="tiff">TIFF</option>
-          <option value="webp">WEBP</option>
-          <option value="svg">SVG</option>
-        </optgroup>
-
-        <!-- Áudio -->
-        <optgroup label="Áudio">
-          <option value="mp3">MP3</option>
-          <option value="wav">WAV</option>
-          <option value="aac">AAC</option>
-          <option value="flac">FLAC</option>
-          <option value="ogg">OGG</option>
-          <option value="m4a">M4A</option>
-          <option value="wma">WMA</option>
-        </optgroup>
-
-        <!-- Vídeo -->
-        <optgroup label="Vídeo">
-          <option value="mp4">MP4</option>
-          <option value="avi">AVI</option>
-          <option value="mov">MOV</option>
-          <option value="wmv">WMV</option>
-          <option value="flv">FLV</option>
-          <option value="mkv">MKV</option>
-          <option value="webm">WEBM</option>
-          <option value="mpeg">MPEG</option>
-          <option value="3gp">3GP</option>
-        </optgroup>
+        <option value="pdf">PDF</option>
+        <option value="docx">DOCX</option>
+        <option value="mp3">MP3</option>
+        <option value="wav">WAV</option>
+        <option value="mp4">MP4</option>
+        <option value="mov">MOV</option>
+        <option value="avi">AVI</option>
+        <option value="jpg">JPG</option>
+        <option value="png">PNG</option>
+        <option value="gif">GIF</option>
+        <option value="bmp">BMP</option>
+        <option value="tiff">TIFF</option>
       </select>
 
       <label for="file-upload">Arquivo:</label>
@@ -260,12 +224,6 @@
         <ul>
           <li>PDF - Documento portátil, ideal para leitura universal</li>
           <li>DOCX - Documento editável do Microsoft Word</li>
-          <li>DOC - Formato antigo do Word</li>
-          <li>TXT - Texto simples sem formatação</li>
-          <li>RTF - Texto formatado rico</li>
-          <li>ODT - Documento aberto do LibreOffice</li>
-          <li>HTML - Código de página web</li>
-          <li>Markdown (MD) - Texto com formatação simples</li>
         </ul>
       </div>
 
@@ -274,11 +232,6 @@
         <ul>
           <li>MP3 - Compressão leve com boa qualidade</li>
           <li>WAV - Áudio sem compressão com qualidade máxima</li>
-          <li>AAC - Áudio com compressão avançada</li>
-          <li>FLAC - Áudio sem perdas, alta qualidade</li>
-          <li>OGG - Formato aberto de áudio</li>
-          <li>M4A - Formato do Apple iTunes</li>
-          <li>WMA - Formato da Microsoft</li>
         </ul>
       </div>
 
@@ -288,25 +241,17 @@
           <li>MP4 - Compatível com a maioria dos dispositivos</li>
           <li>MOV - Formato da Apple com alta qualidade</li>
           <li>AVI - Vídeo com menos compressão e maior tamanho</li>
-          <li>WMV - Formato da Microsoft para vídeo</li>
-          <li>FLV - Vídeo para Flash Player</li>
-          <li>MKV - Contêiner moderno e popular</li>
-          <li>WEBM - Vídeo para web</li>
-          <li>MPEG - Formato clássico</li>
-          <li>3GP - Vídeo para celulares antigos</li>
         </ul>
       </div>
 
       <div class="format-group">
         <h3>Imagens</h3>
         <ul>
-          <li>JPG/JPEG - Formato popular com compressão</li>
+          <li>JPG - Formato popular com compressão</li>
           <li>PNG - Imagem com transparência e compressão sem perdas</li>
           <li>GIF - Animações simples e suporte limitado de cores</li>
           <li>BMP - Formato sem compressão</li>
           <li>TIFF - Formato para alta qualidade e edição</li>
-          <li>WEBP - Formato moderno para web</li>
-          <li>SVG - Gráficos vetoriais escaláveis</li>
         </ul>
       </div>
     </div>
@@ -324,6 +269,13 @@
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
       if (file) {
+        if (file.size > 30 * 1024 * 1024) {
+          alert('Arquivo muito grande! Máximo permitido: 30 MB.');
+          fileInput.value = '';
+          fileNameDisplay.textContent = '';
+          inputFormatSelect.innerHTML = '<option value="">Detectando automaticamente...</option>';
+          return;
+        }
         fileNameDisplay.textContent = `Arquivo carregado: ${file.name}`;
         detectFormat(file.name);
       } else {
@@ -352,18 +304,6 @@
       fileInput.files = e.dataTransfer.files;
       fileInput.dispatchEvent(new Event('change'));
     });
-
-    function validateForm() {
-      if (!fileInput.files.length) {
-        alert('Por favor, envie um arquivo antes de converter.');
-        return false;
-      }
-      if (!document.getElementById('output-format').value) {
-        alert('Por favor, selecione um formato de saída.');
-        return false;
-      }
-      return true;
-    }
   </script>
 </body>
 </html>
