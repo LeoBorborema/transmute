@@ -6,8 +6,9 @@ import os
 app = Flask(__name__)
 
 ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'}
+ALLOWED_OUTPUT_FORMATS = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff'}
 
-def allowed_image_file(filename):
+def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 @app.route('/')
@@ -25,26 +26,30 @@ def convert():
     if file.filename == '':
         return "Nenhum arquivo selecionado", 400
 
-    if not allowed_image_file(file.filename):
-        return "Formato de arquivo não suportado. Só imagens por enquanto.", 400
+    if not allowed_file(file.filename):
+        return "Formato de arquivo não suportado.", 400
 
-    if output_format not in ALLOWED_IMAGE_EXTENSIONS:
-        return "Formato de saída não suportado. Só imagens por enquanto.", 400
+    if output_format not in ALLOWED_OUTPUT_FORMATS:
+        return "Formato de saída não suportado.", 400
 
     try:
-        img = Image.open(file.stream).convert('RGB')
+        img = Image.open(file.stream)
         buf = io.BytesIO()
-        img.save(buf, format=output_format.upper())
-        buf.seek(0)
 
+        if output_format == 'pdf':
+            if img.mode == 'RGBA':
+                img = img.convert('RGB')
+            img.save(buf, format='PDF')
+            mimetype = 'application/pdf'
+        else:
+            img = img.convert('RGB')
+            img.save(buf, format=output_format.upper())
+            mimetype = f'image/{output_format}'
+
+        buf.seek(0)
         output_filename = os.path.splitext(file.filename)[0] + '.' + output_format
 
-        return send_file(
-            buf,
-            as_attachment=True,
-            download_name=output_filename,
-            mimetype=f'image/{output_format}'
-        )
+        return send_file(buf, as_attachment=True, download_name=output_filename, mimetype=mimetype)
 
     except Exception as e:
         return f"Erro na conversão: {str(e)}", 500
