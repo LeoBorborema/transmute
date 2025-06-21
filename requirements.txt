@@ -6,3 +6,4 @@ PyPDF2
 Pillow
 moviepy
 pdf2image
+reportlab
