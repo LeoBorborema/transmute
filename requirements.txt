@@ -5,3 +5,4 @@ python-docx
 fpdf
 cairosvg
 pdf2image
+gunicorn
